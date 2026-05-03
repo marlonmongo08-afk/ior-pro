@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IOR Ultra</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d47a1">
+  <style>
+    body { font-family: Arial; background: #001e3c; color: white; padding: 20px; }
+  .card { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; margin: 15px 0; }
+    button { background: #f9a825; color: black; padding: 15px; border: none; border-radius: 10px; width: 100%; font-weight: bold; margin: 10px 0; }
+    input { padding: 12px; width: 100%; margin: 8px 0; border-radius: 8px; border: none; }
+  .big-btn { width: 150px; height: 150px; border-radius: 50%; margin: 20px auto; display: block; font-size: 18px; }
+  </style>
+</head>
+<body>
+
+<!-- ÉCRAN SETUP 1ÈRE FOIS -->
+<div id="setup">
+  <div class="card">
+    <h1>CONFIG IOR ULTRA</h1>
+    <input id="prenom" placeholder="Ton prénom">
+    <input id="adresse" placeholder="Ton adresse">
+    <input id="email" placeholder="Ton email">
+    <input id="numero" placeholder="Ton numéro">
+    <input id="heureReveil" type="time" value="06:00">
+    <input id="heureCoucher" type="time" value="22:00">
+    <button onclick="enregistrerProfil()">✅ SAUVEGARDER & LANCER IOR</button>
+  </div>
+</div>
+
+<!-- ÉCRAN PRINCIPAL -->
+<div id="main" style="display:none;">
+  <div class="card">
+    <h1>Salut <span id="userName"></span> 👋</h1>
+    <button class="big-btn" onclick="ecouter()">🎤<br>PARLE À IOR</button>
+    <div id="reponse">Dis : "IOR appelle maman", "IOR j'ai mal au ventre", "IOR calcule mur 3x2"</div>
+  </div>
+</div>
+
+<script>
+const CODE_MAITRE = "GUNIOR";
+let profil = {};
+
+function enregistrerProfil() {
+  profil = {
+    prenom: document.getElementById('prenom').value,
+    adresse: document.getElementById('adresse').value,
+    email: document.getElementById('email').value,
+    numero: document.getElementById('numero').value,
+    heureReveil: document.getElementById('heureReveil').value,
+    heureCoucher: document.getElementById('heureCoucher').value
+  };
+  localStorage.setItem('ior_profil', JSON.stringify(profil));
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('userName').innerText = profil.prenom;
+  programmerReveil();
+  parler(`Profil enregistré ${profil.prenom}. IOR te réveille à ${profil.heureReveil}`);
+}
+
+function ecouter() {
+  let reco = new webkitSpeechRecognition();
+  reco.lang = "fr-FR";
+  reco.start();
+  reco.onresult = e => executer(e.results[0][0].transcript.toLowerCase());
+}
+
+function executer(ordre) {
+  ordre = ordre.replace(/ior/g, '').trim();
+
+  // 1. APPELS & SMS
+  if (ordre.includes('appelle')) {
+    let nom = ordre.replace('appelle', '').trim();
+    parler(`J'appelle ${nom}`);
+    // Dans l'apk : window.location.href = `tel:${numero}`;
+  }
+  else if (ordre.includes('envoie message') || ordre.includes('envoie sms')) {
+    parler("Dis-moi le message et à qui");
+    // Dans l'apk : window.location.href = `sms:${numero}?body=${message}`;
+  }
+
+  // 2. SANTÉ
+  else if (ordre.includes('mal au ventre') || ordre.includes('mal à la tête')) {
+    parler(`${profil.prenom}, bois de l'eau, repose-toi. Si ça continue appelle le 1111. Tu veux que j'appelle?`);
+  }
+
+  // 3. CALCULS MURS
+  else if (ordre.includes('calcule mur') || ordre.includes('calcule paroi')) {
+    let dim = ordre.match(/\d+(\.\d+)?/g);
+    if(dim && dim.length >= 2) {
+      let surface = parseFloat(dim[0]) * parseFloat(dim[1]);
+      parler(`Surface du mur : ${surface} mètres carrés ${profil.prenom}`);
+    }
+  }
+
+  // 4. MUSIQUE
+  else if (ordre.includes('mets musique') || ordre.includes('joue')) {
+    let titre = ordre.replace(/mets musique|joue/g, '').trim();
+    window.open(`https://www.youtube.com/results?search_query=${titre}`);
+    parler(`Je lance ${titre}`);
+  }
+
+  // 5. DEVOIRS
+  else if (ordre.includes('devoir')) {
+    let calcul = ordre.match(/[\d+\-*/(). ]+/);
+    if(calcul) {
+      let res = eval(calcul[0]);
+      parler(`Résultat devoir : ${res}. Tu comprends ${profil.prenom}?`);
+    }
+  }
+
+  // 6. RAPPELS
+  else if (ordre.includes('quelle heure')) {
+    let h = new Date().getHours(); let m = new Date().getMinutes();
+    parler(`Il est ${h}h${m} ${profil.prenom}`);
+  }
+
+  else {
+    parler(`J'ai pas compris ${profil.prenom}. Dis : IOR appelle, IOR j'ai mal, IOR calcule mur`);
+  }
+}
+
+function programmerReveil() {
+  let [h, m] = profil.heureReveil.split(':');
+  let maintenant = new Date();
+  let reveil = new Date();
+  reveil.setHours(h, m, 0);
+  if(reveil < maintenant) reveil.setDate(reveil.getDate() + 1);
+  let diff = reveil - maintenant;
+  setTimeout(() => {
+    parler(`Réveil ${profil.prenom} ${profil.prenom} ${profil.prenom}! Il est ${profil.heureReveil}, école!`);
+  }, diff);
+}
+
+function parler(texte) {
+  document.getElementById('reponse').innerText = texte;
+  let voix = new SpeechSynthesisUtterance(texte);
+  voix.lang = "fr-FR";
+  speechSynthesis.speak(voix);
+}
+
+// Check si profil existe
+if(localStorage.getItem('ior_profil')) {
+  profil = JSON.parse(localStorage.getItem('ior_profil'));
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('userName').innerText = profil.prenom;
+  programmerReveil();
+}
+</script>
+</body>
+</html>
