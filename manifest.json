@@ -1,21 +1,24 @@
 {
-  "name": "IOR Ultra",
-  "short_name": "IOR",
+  "name": "IOR PRO - Jarvis Africain",
+  "short_name": "IOR PRO",
+  "description": "IOR = Jarvis Africain. Base de tout ton téléphone",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#001e3c",
-  "theme_color": "#0d47a1",
-  "description": "IOR = Jarvis Africain. Base de tout ton téléphone",
+  "background_color": "#000000",
+  "theme_color": "#FFD700",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
